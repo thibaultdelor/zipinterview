@@ -2,13 +2,16 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/sethvargo/go-retry"
 )
 
 // ElasticIndexName is the name of the Index where we store the events received
@@ -24,29 +27,38 @@ func InitElastic() *elasticsearch.Client {
 	}
 
 	// Retrieve Client and Server versions
-	var r map[string]interface{}
-	res, err := client.Info()
+	// Retry just because of docker compose start order
+	err = retry.Constant(context.Background(), 1*time.Second, func(ctx context.Context) error {
+		var r map[string]interface{}
+		res, err := client.Info()
+		if err != nil {
+			errMsg := fmt.Sprintf("Error retrieving Elasticsearch info: %s", err)
+			log.Println(errMsg)
+			return retry.RetryableError(errors.New(errMsg))
+		}
+		defer res.Body.Close()
+		if res.IsError() {
+			log.Fatalf("Error: %s", res.String())
+		}
+		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+			log.Fatalf("Error parsing the response body: %s", err)
+		}
+		log.Printf("Client: %s", elasticsearch.Version)
+		log.Printf("Server: %s", r["version"].(map[string]interface{})["number"])
+		log.Println(strings.Repeat("~", 37))
+		return nil
+	})
 	if err != nil {
-		log.Fatalf("Error retrieving Elasticsearch info: %s", err)
+		log.Fatal(err)
 	}
-	defer res.Body.Close()
-	if res.IsError() {
-		log.Fatalf("Error: %s", res.String())
-	}
-	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-		log.Fatalf("Error parsing the response body: %s", err)
-	}
-	log.Printf("Client: %s", elasticsearch.Version)
-	log.Printf("Server: %s", r["version"].(map[string]interface{})["number"])
-	log.Println(strings.Repeat("~", 37))
 
 	// Create the index if not already there
-	exist, err := client.Indices.Exists([]string{ElasticIndexName})
+	existResp, err := client.Indices.Exists([]string{ElasticIndexName})
 	if err != nil {
 		log.Fatalf("Failed to retrieving Elasticsearch index: %s", err)
 	}
-	defer res.Body.Close()
-	if exist.StatusCode == 404 {
+	defer existResp.Body.Close()
+	if existResp.StatusCode == 404 {
 		mapping, _ := json.Marshal(map[string]interface{}{
 			"mappings": map[string]interface{}{
 				"properties": map[string]interface{}{
@@ -69,8 +81,8 @@ func InitElastic() *elasticsearch.Client {
 			defer create.Body.Close()
 			log.Printf("Index created: %s", create)
 		}
-	} else if exist.IsError() {
-		log.Fatalf("Unexpected Error when checking Index: %s", exist)
+	} else if existResp.IsError() {
+		log.Fatalf("Unexpected Error when checking Index: %s", existResp)
 	} else {
 		log.Printf("Index already exist: %s", ElasticIndexName)
 	}
