@@ -13,7 +13,7 @@ type ClickEvent struct {
 	UserID int `json:"user_id" binding:"required"`
 }
 
-// IngestEvent take an event and put it in elastic
+// IngestEvent take a click event and put it in elastic
 func IngestEvent(c *gin.Context) {
 	// Validate input
 	var input ClickEvent
@@ -35,6 +35,6 @@ func IngestEvent(c *gin.Context) {
 
 func main() {
 	r := gin.Default()
-	r.PUT("/", IngestEvent)
+	r.PUT("/clickevents", IngestEvent)
 	r.Run()
 }
