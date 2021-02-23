@@ -22,6 +22,7 @@ output "ecr_repository_ingester_endpoint" {
 
 resource "aws_ecs_cluster" "ecs_cluster" {
     name  = "zipco-cluster"
+    capacity_providers = [ aws_ecs_capacity_provider.cheap_ecs_provider.name ]
 }
 
 resource "aws_ecs_task_definition" "elasticserver" {
@@ -59,7 +60,39 @@ resource "aws_ecs_service" "elasticservice" {
   desired_count   = 1
 }
 
+resource "aws_launch_template" "freetier" {
+  name_prefix   = "zipco"
+  image_id      = "ami-04f77aa5970939148"
+  instance_type = "t2.micro"
+}
 
-resource "aws_autoscaling_group" "ecs_cluster_instances" {
-    # IN progress
+resource "aws_autoscaling_group" "cheapscaling" {
+  availability_zones = ["ap-southeast-2a"]
+  desired_capacity   = 1
+  max_size           = 1
+  min_size           = 1
+
+  launch_template {
+    id      = aws_launch_template.freetier.id
+    version = "$Latest"
+  }
+  tag {
+    key                 = "AmazonECSManaged"
+    value               = ""
+    propagate_at_launch = true
+  }
+}
+resource "aws_ecs_capacity_provider" "cheap_ecs_provider" {
+  name = "cheap_ecs_provider"
+
+  auto_scaling_group_provider {
+    auto_scaling_group_arn         = aws_autoscaling_group.cheapscaling.arn
+
+    managed_scaling {
+      maximum_scaling_step_size = 1
+      minimum_scaling_step_size = 1
+      status                    = "ENABLED"
+      target_capacity           = 1
+    }
+  }
 }
