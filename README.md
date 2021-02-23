@@ -20,3 +20,23 @@
 > You will use terraform to build the ECS/cloudwatch infrastructure on AWS and the serverless function
 > for the lambda function.
 
+
+## Local testing
+
+```
+docker compose up
+curl -X PUT -H "Content-Type: application/json" -d '{"user_id":1}' "http://localhost:8080/clickevents"
+```
+
+## Deploying 
+
+First lets push our images
+```
+$ terraform apply -target="aws_ecr_repository.zipco_ecr_repo"
+$ aws ecr get-login-password | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.ap-southeast-2.amazonaws.com
+```
+
+Then deploy our whole infra
+```
+$ terraform apply
+```
