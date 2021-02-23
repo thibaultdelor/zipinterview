@@ -21,11 +21,23 @@
 > for the lambda function.
 
 
+## State
+
+ - Locally we have a docker compose that runs Elastic search an the go API
+ - The `ingester` folder contains the go API in go that takes event and store them in Elastic
+ - The `pythonlambda` contains an AWS lambda handler that returns the number of events in the last 3 minutes and the number of users
+ - An incomplete terraform definition that create an ECS cluster
+  
+
 ## Local testing
 
 ```
+# Start the Go API backed by Elastic
 docker compose up
+# Send an event
 curl -X PUT -H "Content-Type: application/json" -d '{"user_id":1}' "http://localhost:8080/clickevents"
+# Collect Stats
+cd pythonlambda &&  pip install -r requirements.txt && python app.py
 ```
 
 ## Deploying 
