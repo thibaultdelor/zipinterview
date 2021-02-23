@@ -26,8 +26,19 @@
  - Locally we have a docker compose that runs Elastic search an the go API
  - The `ingester` folder contains the go API in go that takes event and store them in Elastic
  - The `pythonlambda` contains an AWS lambda handler that returns the number of events in the last 3 minutes and the number of users
- - An incomplete terraform definition that create an ECS cluster
+ - An incomplete terraform definition that create a non working ECS cluster
   
+### Why stopping here?
+
+I have already invested a lot of my time and can't commit more.
+
+I feel like a lot of my struggles are things that wouldn't be an issue at work :
+ - I dont want to use Fargate since there's no free tier
+ - I am trying to setup a cluster with just t2.micro to stay in the free tier
+ - I would use AWS ElasticService instead of trying to run my own
+ - ECS takes time to setup and it's a one off thing (setting up the VPC, 
+   the security config, the AMI user_data config, the IAM roles, ...). In a work environment,
+   I would expect to have at least a full day to set it up using terraform.
 
 ## Local testing
 

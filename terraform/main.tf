@@ -60,10 +60,11 @@ resource "aws_ecs_service" "elasticservice" {
   desired_count   = 1
 }
 
-resource "aws_launch_template" "freetier" {
+resource "aws_launch_template" "freetierecs" {
   name_prefix   = "zipco"
-  image_id      = "ami-04f77aa5970939148"
+  image_id      = "ami-0310be5230f55bb3d"
   instance_type = "t2.micro"
+  user_data = filebase64("${path.module}/ecsinit.sh")
 }
 
 resource "aws_autoscaling_group" "cheapscaling" {
@@ -73,7 +74,7 @@ resource "aws_autoscaling_group" "cheapscaling" {
   min_size           = 1
 
   launch_template {
-    id      = aws_launch_template.freetier.id
+    id      = aws_launch_template.freetierecs.id
     version = "$Latest"
   }
   tag {
