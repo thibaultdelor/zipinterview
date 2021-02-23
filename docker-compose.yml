@@ -8,7 +8,13 @@ services:
     ports:
       - 9200:9200
   ingester:
-    build: .
+    build: ./ingester
+    environment: 
+      - ELASTICSEARCH_URL=http://es:9200/
+    ports:
+      - 8080:8080
+  countlambda:
+    build: ./pythonlambda
     environment: 
       - ELASTICSEARCH_URL=http://es:9200/
     ports:
